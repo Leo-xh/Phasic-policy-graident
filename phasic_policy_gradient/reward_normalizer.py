@@ -54,6 +54,7 @@ def update_mean_var_count_from_moments(
 
     return new_mean, new_var, new_count
 
+
 class RewardNormalizer:
     """
     Pseudocode can be found in https://arxiv.org/pdf/1811.02553.pdf

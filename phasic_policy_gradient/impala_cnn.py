@@ -6,7 +6,9 @@ from torch.nn import functional as F
 
 from . import torch_util as tu
 from gym3.types import Real, TensorType
+
 REAL = Real()
+
 
 class Encoder(nn.Module):
     """
@@ -49,6 +51,7 @@ class Encoder(nn.Module):
             state_out: array or dict
         """
         raise NotImplementedError
+
 
 class CnnBasicBlock(nn.Module):
     """

@@ -7,6 +7,7 @@ from . import torch_util as tu
 from .tree_util import tree_map
 from .vec_monitor2 import VecMonitor2
 
+
 class Roller:
     def __init__(
         self,
@@ -20,7 +21,7 @@ class Roller:
         keep_cost: "keep per step costs and add to segment" = False,
     ):
         """
-            All outputs from public methods are torch arrays on default device
+        All outputs from public methods are torch arrays on default device
         """
         self._act_fn = act_fn
         if not isinstance(venv, VecMonitor2):

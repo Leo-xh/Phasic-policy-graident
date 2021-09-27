@@ -25,6 +25,7 @@ def rcm(start, stop, modulus, mode="[)"):
         (left_hit and mode[0] == "[") or (middle_hit) or (right_hit and mode[1] == "]")
     )
 
+
 class LogSaveHelper:
     def __init__(
         self,

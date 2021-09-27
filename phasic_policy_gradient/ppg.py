@@ -10,6 +10,7 @@ from mpi4py import MPI
 from .tree_util import tree_map, tree_reduce
 import operator
 
+
 def sum_nonbatch(logprob_tree):
     """
     sums over nonbatch dimensions and over all leaves of the tree
@@ -45,6 +46,7 @@ class PpoModel(th.nn.Module):
             state_in=state_in,
         )
         return vpred[:, 0]
+
 
 class PhasicModel(PpoModel):
     def forward(self, ob, first, state_in) -> "pd, vpred, aux, state_out":
@@ -107,12 +109,17 @@ class PhasicValueModel(PhasicModel):
         self.pi_head = tu.NormedLinear(lastsize, pi_outsize, scale=0.1)
         self.aux_vf_head = tu.NormedLinear(lastsize, 1, scale=0.1)
 
-    def compute_aux_loss(self, aux, seg):
+    def compute_aux_loss(self, aux, seg, use_aux_vf: bool = True):
         vtarg = seg["vtarg"]
-        return {
-            "vf_aux": 0.5 * ((aux["vpredaux"] - vtarg) ** 2).mean(),
-            "vf_true": 0.5 * ((aux["vpredtrue"] - vtarg) ** 2).mean(),
-        }
+        if use_aux_vf:
+            return {
+                "vf_aux": 0.5 * ((aux["vpredaux"] - vtarg) ** 2).mean(),
+                "vf_true": 0.5 * ((aux["vpredtrue"] - vtarg) ** 2).mean(),
+            }
+        else:
+            return {
+                "vf_true": 0.5 * ((aux["vpredtrue"] - vtarg) ** 2).mean(),
+            }
 
     def reshape_x(self, x):
         b, t = x.shape[:2]
@@ -160,6 +167,7 @@ class PhasicValueModel(PhasicModel):
     def aux_keys(self):
         return ["vtarg"]
 
+
 def make_minibatches(segs, mbsize):
     """
     Yield one epoch of minibatch over the dataset described by segs
@@ -175,7 +183,7 @@ def make_minibatches(segs, mbsize):
         )
 
 
-def aux_train(*, model, segs, opt, mbsize, name2coef):
+def aux_train(*, model, segs, opt, mbsize, name2coef, use_aux_vf: bool = True):
     """
     Train on auxiliary loss + policy KL + vf distance
     """
@@ -186,7 +194,7 @@ def aux_train(*, model, segs, opt, mbsize, name2coef):
         pd, _, aux, _state_out = model(mb["ob"], mb["first"], mb["state_in"])
         name2loss = {}
         name2loss["pol_distance"] = td.kl_divergence(mb["oldpd"], pd).mean()
-        name2loss.update(model.compute_aux_loss(aux, mb))
+        name2loss.update(model.compute_aux_loss(aux, mb, use_aux_vf))
         assert set(name2coef.keys()).issubset(name2loss.keys())
         loss = 0
         for name in name2loss.keys():
@@ -227,6 +235,8 @@ def learn(
     interacts_total=float("inf"),
     name2coef=None,
     comm=None,
+    restore: bool = True,
+    use_aux_vf: bool = True,
 ):
     """
     Run PPO for X iterations
@@ -240,7 +250,7 @@ def learn(
     name2coef = name2coef or {}
 
     while True:
-        store_segs = n_pi != 0 and n_aux_epochs != 0
+        store_segs = n_pi != 0 and n_aux_epochs != 0 and restore
 
         # Policy phase
         ppo_state = ppo.learn(
@@ -271,6 +281,7 @@ def learn(
                     opt=aux_state,
                     mbsize=aux_mbsize,
                     name2coef=name2coef,
+                    use_aux_vf=use_aux_vf
                 )
                 logger.dumpkvs()
             segs.clear()

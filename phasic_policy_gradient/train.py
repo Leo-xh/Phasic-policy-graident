@@ -1,12 +1,16 @@
 import argparse
+import os
 from mpi4py import MPI
+from procgen.env import ENV_NAMES
 from . import ppg
 from . import torch_util as tu
 from .impala_cnn import ImpalaEncoder
 from . import logger
 from .envs import get_venv
 
-def train_fn(env_name="coinrun",
+
+def train_fn(
+    env_name="coinrun",
     distribution_mode="hard",
     arch="dual",  # 'shared', 'detach', or 'dual'
     # 'shared' = shared policy and value networks
@@ -16,29 +20,34 @@ def train_fn(env_name="coinrun",
     num_envs=64,
     n_epoch_pi=1,
     n_epoch_vf=1,
-    gamma=.999,
+    gamma=0.999,
     aux_lr=5e-4,
     lr=5e-4,
     nminibatch=8,
     aux_mbsize=4,
-    clip_param=.2,
+    clip_param=0.2,
     kl_penalty=0.0,
     n_aux_epochs=6,
     n_pi=32,
     beta_clone=1.0,
     vf_true_weight=1.0,
-    log_dir='/tmp/ppg',
-    comm=None):
+    log_dir="/tmp/ppg",
+    comm=None,
+    restore: bool = True,
+    use_aux_vf: bool = True,
+):
     if comm is None:
         comm = MPI.COMM_WORLD
     tu.setup_dist(comm=comm)
     tu.register_distributions_for_tree_util()
 
     if log_dir is not None:
-        format_strs = ['csv', 'stdout'] if comm.Get_rank() == 0 else []
+        format_strs = ["csv", "stdout"] if comm.Get_rank() == 0 else []
         logger.configure(comm=comm, dir=log_dir, format_strs=format_strs)
 
-    venv = get_venv(num_envs=num_envs, env_name=env_name, distribution_mode=distribution_mode)
+    venv = get_venv(
+        num_envs=num_envs, env_name=env_name, distribution_mode=distribution_mode
+    )
 
     enc_fn = lambda obtype: ImpalaEncoder(
         obtype.shape,
@@ -66,7 +75,7 @@ def train_fn(env_name="coinrun",
             n_epoch_pi=n_epoch_pi,
             clip_param=clip_param,
             kl_penalty=kl_penalty,
-            log_save_opts={"save_mode": "last"}
+            log_save_opts={"save_mode": "last"},
         ),
         aux_lr=aux_lr,
         aux_mbsize=aux_mbsize,
@@ -74,33 +83,62 @@ def train_fn(env_name="coinrun",
         n_pi=n_pi,
         name2coef=name2coef,
         comm=comm,
+        restore=restore,
+        use_aux_vf=use_aux_vf,
     )
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Process PPG training arguments.')
-    parser.add_argument('--env_name', type=str, default='coinrun')
-    parser.add_argument('--num_envs', type=int, default=64)
-    parser.add_argument('--n_epoch_pi', type=int, default=1)
-    parser.add_argument('--n_epoch_vf', type=int, default=1)
-    parser.add_argument('--n_aux_epochs', type=int, default=6)
-    parser.add_argument('--n_pi', type=int, default=32)
-    parser.add_argument('--clip_param', type=float, default=0.2)
-    parser.add_argument('--kl_penalty', type=float, default=0.0)
-    parser.add_argument('--arch', type=str, default='dual') # 'shared', 'detach', or 'dual'
+    parser = argparse.ArgumentParser(description="Process PPG training arguments.")
+    parser.add_argument("--env_name", type=str, default="all")
+    parser.add_argument("--num_envs", type=int, default=64)
+    parser.add_argument("--n_epoch_pi", type=int, default=1)
+    parser.add_argument("--n_epoch_vf", type=int, default=1)
+    parser.add_argument("--n_aux_epochs", type=int, default=6)
+    parser.add_argument("--n_pi", type=int, default=32)
+    parser.add_argument("--clip_param", type=float, default=0.2)
+    parser.add_argument("--kl_penalty", type=float, default=0.0)
+    parser.add_argument(
+        "--arch", type=str, default="dual"
+    )  # 'shared', 'detach', or 'dual'
+    parser.add_argument("--log_dir", type=str, required=True)
+    parser.add_argument("--restore", type=bool, default=True)
+    parser.add_argument("--use_aux_vf", type=bool, default=True)
 
     args = parser.parse_args()
 
     comm = MPI.COMM_WORLD
 
-    train_fn(
-        env_name=args.env_name,
-        num_envs=args.num_envs,
-        n_epoch_pi=args.n_epoch_pi,
-        n_epoch_vf=args.n_epoch_vf,
-        n_aux_epochs=args.n_aux_epochs,
-        n_pi=args.n_pi,
-        arch=args.arch,
-        comm=comm)
+    if args.env_name == "all":
+        for env_name in ENV_NAMES:
+            train_fn(
+                env_name=env_name,
+                num_envs=args.num_envs,
+                n_epoch_pi=args.n_epoch_pi,
+                n_epoch_vf=args.n_epoch_vf,
+                n_aux_epochs=args.n_aux_epochs,
+                n_pi=args.n_pi,
+                arch=args.arch,
+                comm=comm,
+                log_dir=os.path.join(args.log_dir, env_name),
+                restore=args.restore,
+                use_aux_vf=args.use_aux_vf,
+            )
+    else:
+        train_fn(
+            env_name=args.env_name,
+            num_envs=args.num_envs,
+            n_epoch_pi=args.n_epoch_pi,
+            n_epoch_vf=args.n_epoch_vf,
+            n_aux_epochs=args.n_aux_epochs,
+            n_pi=args.n_pi,
+            arch=args.arch,
+            comm=comm,
+            log_dir=args.log_dir,
+            restore=args.restore,
+            use_aux_vf=args.use_aux_vf,
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
