@@ -237,6 +237,7 @@ def learn(
     comm=None,
     restore: bool = True,
     use_aux_vf: bool = True,
+    nstep: int = 256,
 ):
     """
     Run PPO for X iterations
@@ -263,7 +264,8 @@ def learn(
             interacts_total=interacts_total,
             store_segs=store_segs,
             comm=comm,
-            **ppo_hps,
+            nstep=nstep,
+            ** ppo_hps,
         )
 
         if ppo_state["curr_interact_count"] >= interacts_total:
@@ -281,7 +283,7 @@ def learn(
                     opt=aux_state,
                     mbsize=aux_mbsize,
                     name2coef=name2coef,
-                    use_aux_vf=use_aux_vf
+                    use_aux_vf=use_aux_vf,
                 )
                 logger.dumpkvs()
             segs.clear()

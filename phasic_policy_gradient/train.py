@@ -35,6 +35,7 @@ def train_fn(
     comm=None,
     restore: bool = True,
     use_aux_vf: bool = True,
+    nstep:int=256
 ):
     if comm is None:
         comm = MPI.COMM_WORLD
@@ -85,6 +86,7 @@ def train_fn(
         comm=comm,
         restore=restore,
         use_aux_vf=use_aux_vf,
+        nstep=nstep,
     )
 
 
@@ -104,6 +106,7 @@ def main():
     parser.add_argument("--log_dir", type=str, required=True)
     parser.add_argument("--restore", type=bool, default=True)
     parser.add_argument("--use_aux_vf", type=bool, default=True)
+    parser.add_argument("--nstep", type=int, help="batch size", default=256)
 
     args = parser.parse_args()
 
@@ -123,6 +126,7 @@ def main():
                 log_dir=os.path.join(args.log_dir, env_name),
                 restore=args.restore,
                 use_aux_vf=args.use_aux_vf,
+                nstep=args.nstep
             )
     else:
         train_fn(
@@ -137,6 +141,7 @@ def main():
             log_dir=args.log_dir,
             restore=args.restore,
             use_aux_vf=args.use_aux_vf,
+            nstep=args.nstep
         )
 
 

@@ -1,4 +1,20 @@
-**Change:** Add more options and conduct more ablation studies
+Forked from [https://github.com/openai/phasic-policy-gradient](https://github.com/openai/phasic-policy-gradient), which contains original results in the paper
+
+**Change:** Add more options and conduct more ablation studies, the results are stored in `./log`
+
+PPG with default hyperparameters (results/ppg-runN):
+
+```
+mpiexec -np 4 python -m phasic_policy_gradient.train
+python -m phasic_policy_gradient.graph --experiment_name ppg
+```
+
+PPO baseline (results/ppo-runN):
+
+```
+mpiexec -np 4 python -m phasic_policy_gradient.train --n_epoch_pi 3 --n_epoch_vf 3 --n_aux_epochs 0 --arch shared
+python -m phasic_policy_gradient.graph --experiment_name ppo
+```
 
 
 Below is original readme

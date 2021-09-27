@@ -30,5 +30,7 @@ MANIFEST
 *.manifest
 *.spec
 
-log
+train.sh
 phasic_policy_gradient/results
+
+log
