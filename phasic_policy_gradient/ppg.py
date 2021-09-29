@@ -25,6 +25,9 @@ class PpoModel(th.nn.Module):
 
     @tu.no_grad
     def act(self, ob, first, state_in):
+        """
+        return log_prob
+        """
         pd, vpred, _, state_out = self(
             ob=tree_map(lambda x: x[:, None], ob),
             first=first[:, None],
@@ -152,6 +155,7 @@ class PhasicValueModel(PhasicModel):
         pd = self.make_distr(pivec)
 
         aux = {}
+        # vf_pred is also in aux, with detached gradient
         for k in self.vf_keys:
             if self.detach_value_head:
                 x_out[k] = x_out[k].detach()
@@ -235,7 +239,6 @@ def learn(
     interacts_total=float("inf"),
     name2coef=None,
     comm=None,
-    restore: bool = True,
     use_aux_vf: bool = True,
     nstep: int = 256,
 ):
@@ -250,10 +253,11 @@ def learn(
     aux_state = th.optim.Adam(model.parameters(), lr=aux_lr)
     name2coef = name2coef or {}
 
+    # MARK: correpsonding to phase loop
     while True:
-        store_segs = n_pi != 0 and n_aux_epochs != 0 and restore
+        store_segs = n_pi != 0 and n_aux_epochs != 0
 
-        # Policy phase
+        # Policy phase, n_pi loop
         ppo_state = ppo.learn(
             venv=venv,
             model=model,
@@ -265,13 +269,14 @@ def learn(
             store_segs=store_segs,
             comm=comm,
             nstep=nstep,
-            ** ppo_hps,
+            **ppo_hps,
         )
 
         if ppo_state["curr_interact_count"] >= interacts_total:
             break
 
         if n_aux_epochs > 0:
+            # MARK: segs contains the samples from n_pi(32) iterations
             segs = ppo_state["seg_buf"]
             compute_presleep_outputs(model=model, segs=segs, mbsize=aux_mbsize)
             # Auxiliary phase

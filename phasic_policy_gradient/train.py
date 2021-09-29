@@ -33,9 +33,8 @@ def train_fn(
     vf_true_weight=1.0,
     log_dir="/tmp/ppg",
     comm=None,
-    restore: bool = True,
     use_aux_vf: bool = True,
-    nstep:int=256
+    nstep: int = 256,
 ):
     if comm is None:
         comm = MPI.COMM_WORLD
@@ -84,7 +83,6 @@ def train_fn(
         n_pi=n_pi,
         name2coef=name2coef,
         comm=comm,
-        restore=restore,
         use_aux_vf=use_aux_vf,
         nstep=nstep,
     )
@@ -104,16 +102,18 @@ def main():
         "--arch", type=str, default="dual"
     )  # 'shared', 'detach', or 'dual'
     parser.add_argument("--log_dir", type=str, required=True)
-    parser.add_argument("--restore", type=bool, default=True)
-    parser.add_argument("--use_aux_vf", type=bool, default=True)
+    parser.add_argument("--no_aux_vf", action="store_true")
     parser.add_argument("--nstep", type=int, help="batch size", default=256)
 
     args = parser.parse_args()
+    args.use_aux_vf = not args.no_aux_vf
+    from pprint import pprint
+    pprint(dict(args.__dict__))
 
     comm = MPI.COMM_WORLD
-
+    
     if args.env_name == "all":
-        for env_name in ENV_NAMES:
+        for env_name in ENV_NAMES[:5]:
             train_fn(
                 env_name=env_name,
                 num_envs=args.num_envs,
@@ -124,9 +124,8 @@ def main():
                 arch=args.arch,
                 comm=comm,
                 log_dir=os.path.join(args.log_dir, env_name),
-                restore=args.restore,
                 use_aux_vf=args.use_aux_vf,
-                nstep=args.nstep
+                nstep=args.nstep,
             )
     else:
         train_fn(
@@ -139,9 +138,8 @@ def main():
             arch=args.arch,
             comm=comm,
             log_dir=args.log_dir,
-            restore=args.restore,
             use_aux_vf=args.use_aux_vf,
-            nstep=args.nstep
+            nstep=args.nstep,
         )
 
 

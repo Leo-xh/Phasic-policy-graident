@@ -31,6 +31,6 @@ MANIFEST
 *.spec
 
 train.sh
-phasic_policy_gradient/results
+results
 
 log

@@ -223,6 +223,8 @@ def learn(
             seg["reward"] = reward_normalizer(seg["reward"], seg["first"])
         compute_advantage(model, seg, γ, λ, comm=comm)
 
+        # MARK: if true, the log_prob of all the policy (all the n_pi loop) in this phase loop will be stored
+        # MARK: which is different from the paper
         if store_segs:
             seg_buf.append(tree_map(lambda x: x.cpu(), seg))
 

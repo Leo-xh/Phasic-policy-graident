@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from math import ceil
+
+# TODO: change it
 from .constants import ENV_NAMES
 
 
@@ -119,6 +121,7 @@ def plot_experiment(
     num_envs = len(ENV_NAMES)
     will_normalize_and_reduce = normalization_ranges is not None
 
+    # NOTE: the normalized plot is seperate
     if will_normalize_and_reduce:
         num_visible_plots = 1
         f, axarr = plt.subplots()
@@ -162,6 +165,8 @@ def plot_experiment(
             curr_ax = None if will_normalize_and_reduce else ax
 
             raw_data = np.array([read_csv(file, key_name) for file in csv_files])
+            # NOTE: plot all algorithms in an env if normalize is False
+            # NOTE: else plot the normalized values
             values = plot_values(
                 curr_ax, raw_data, title=env_name, color=color, label=label, **kwargs
             )

@@ -41,6 +41,7 @@ def main_pcg_sample_entry(experiment_name, normalize_and_reduce):
 
     kwargs = {"smoothing": 0.9}
 
+    # TODO: change this
     kwargs["x_scale"] = (
         4 * 256 * 64 / 1e6
     )  # num_workers * num_steps_per_rollout * num_envs_per_worker / graph_scaling

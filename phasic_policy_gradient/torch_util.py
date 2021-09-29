@@ -168,7 +168,9 @@ def torch_init_process_group(
         hostname = socket.gethostname()
     os.environ["MASTER_ADDR"] = comm.bcast(hostname, root=0)
     os.environ["RANK"] = str(comm.rank)
+    print(f"rank {str(comm.rank)}")
     os.environ["WORLD_SIZE"] = str(comm.size)
+    print(f"size {os.environ['WORLD_SIZE']}")
 
     # sometimes torch.dist doesn't clean up old processes.
     # this ensures processes are started
