@@ -155,7 +155,7 @@ class PhasicValueModel(PhasicModel):
         pd = self.make_distr(pivec)
 
         aux = {}
-        # vf_pred is also in aux, with detached gradient
+        # NOTE: vf_pred is also in aux, with detached gradient
         for k in self.vf_keys:
             if self.detach_value_head:
                 x_out[k] = x_out[k].detach()

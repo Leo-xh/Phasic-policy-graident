@@ -108,12 +108,13 @@ def main():
     args = parser.parse_args()
     args.use_aux_vf = not args.no_aux_vf
     from pprint import pprint
+
     pprint(dict(args.__dict__))
 
     comm = MPI.COMM_WORLD
-    
+
     if args.env_name == "all":
-        for env_name in ENV_NAMES[:5]:
+        for env_name in ENV_NAMES[:4]:
             train_fn(
                 env_name=env_name,
                 num_envs=args.num_envs,
